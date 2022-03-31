@@ -57,7 +57,7 @@ def get_atomic_formfactor(atom_name, q_detector_in_A):
     http://lampx.tugraz.at/~hadley/ss1/crystaldiffraction/atomicformfactors/formfactors.php
 
     :param atom_name:
-    :param q_detector:
+    :param q_detector_in_A:
     :return:
     """
     atomic_formfactor = 0

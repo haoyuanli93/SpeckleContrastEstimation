@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import integrate
-import WataData
 
 """
 All quantities used in this script are in the SI unit.

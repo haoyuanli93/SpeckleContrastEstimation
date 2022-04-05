@@ -16,6 +16,10 @@ TODO: Finish this introduction
 import numpy as np
 from ContrastEstimation import AtomFormFactor
 
+# Define constants
+N_A = 6.02214086 * 1e23  # Avogadro's Constant
+re0 = 2.8179403227 * 1e-15  # classical electron radius
+
 
 def get_molecular_formfactor_for_uniform_sample(molecular_constitution, q_detector_in_A):
     """
@@ -46,10 +50,26 @@ def get_molecular_formfactor_for_uniform_sample(molecular_constitution, q_detect
     return np.sqrt(mff)
 
 
-def get_differential_crosssection_for_uniform_sample(molecular_structure, q_detector):
-    # Loop through the atomic position
+def get_differential_crosssection_for_uniform_sample(molecular_constitution, molecular_molar_density,
+                                                     q_detector_in_A):
+    """
+    The differential cross section obtained in this function
+    has been normalized by the sample thickness.
+    Therefore, it has a unit of m^-1
 
-    pass
+    :param molecular_constitution:
+    :param molecular_molar_density:  The unit is in mol / L
+    :param q_detector_in_A:
+    :return:
+    """
+    # Get the molecular form factor
+    mff = get_molecular_formfactor_for_uniform_sample(molecular_constitution=molecular_constitution,
+                                                      q_detector_in_A=q_detector_in_A)
+
+    # get the differential cross section
+    # The additional factor 1000 convert the molar density from mol/L to mol/m^3.
+
+    return molecular_molar_density * 1000. * N_A * (mff * re0) ** 2
 
 
 def get_scatter_intensity_with_a_unifrom_sample(differential, density, sample_thickness, q_detector, q_incident):

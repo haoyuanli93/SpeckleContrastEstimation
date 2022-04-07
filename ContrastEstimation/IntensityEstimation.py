@@ -116,12 +116,12 @@ def get_mass_attenuation_coefficient(molecule_structure, energy_keV):
     return molecule_mass_attenuation_coefficient
 
 
-def get_attenuation_coefficient(molecule_structure_list, energy_keV, density_list):
+def get_attenuation_coefficient(molecule_structure_list, photon_energy_keV, density_list):
     """
     Get the attenuation coefficient
 
     :param molecule_structure_list:
-    :param energy_keV:
+    :param photon_energy_keV:
     :param density_list: The density of each kind of molecules in this compound. The unit is g / cm^3
     :return:
     """
@@ -129,21 +129,21 @@ def get_attenuation_coefficient(molecule_structure_list, energy_keV, density_lis
     # Get the total attenuation coefficient
     total_attenuation_coefficient = 0.
     for idx in range(len(molecule_structure_list)):
-        mu_rho = get_mass_attenuation_coefficient(molecule_structure_list[idx], energy_keV)
+        mu_rho = get_mass_attenuation_coefficient(molecule_structure_list[idx], photon_energy_keV)
         total_attenuation_coefficient += mu_rho * density_list
 
     return total_attenuation_coefficient
 
 
-def get_attenuation_length_cm(molecule_structure_list, energy_keV, density_list):
+def get_attenuation_length_cm(molecule_structure_list, photon_energy_keV, density_list):
     """
 
     :param molecule_structure_list:
-    :param energy_keV:
+    :param photon_energy_keV:
     :param density_list:  The density of each kind of molecules in this compound. The unit is g / cm^3
     :return:
     """
-    return 1. / get_attenuation_coefficient(molecule_structure_list, energy_keV, density_list)
+    return 1. / get_attenuation_coefficient(molecule_structure_list, photon_energy_keV, density_list)
 
 
 def get_differential_crosssection_for_uniform_sample(molecule_structure, molecular_molar_density,
@@ -168,5 +168,9 @@ def get_differential_crosssection_for_uniform_sample(molecule_structure, molecul
     return molecular_molar_density * 1000. * N_A * (mff * re0) ** 2
 
 
-def get_scatter_intensity_with_a_unifrom_sample(differential, density, sample_thickness, q_detector, q_incident):
+def get_scatter_intensity_with_a_unifrom_sample(differential_list,
+                                                density_list,
+                                                sample_thickness,
+                                                q_detector,
+                                                photon_energy_keV):
     pass

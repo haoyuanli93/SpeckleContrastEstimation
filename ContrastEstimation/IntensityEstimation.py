@@ -57,14 +57,28 @@ def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_i
             # Add the formfactor to the holder
             mff += aff1 ** 2
 
-            for atom_idx2 in range(atom_idx1):
-                pass
+        for atom_idx2 in range(1, atom_num):
+            aff1 = AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[atom_idx2][0],
+                                                        q_detector_in_A=q_detector_in_A)
+
+            for atom_idx3 in range(atom_idx2 - 1):
+                aff2 = AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[atom_idx3][0],
+                                                            q_detector_in_A=q_detector_in_A)
+
+                phase = q_detector_in_A * np.linalg.norm(molecule_structure[atom_idx2][1] -
+                                                         molecule_structure[atom_idx3][1])
+
+                mff += 2 * aff1 * aff2 * np.sin(phase) / phase
 
         return np.sqrt(mff)
 
 
-def get_attenuation_length(molecule_structure, ):
-    pass
+def get_attenuation_length(molecule_structure):
+
+    atom_num = len(molecule_structure)
+    for atom_idx in range(atom_num):
+        # Get the list of the mass attenuation coefficient:
+        pass
 
 
 def get_differential_crosssection_for_uniform_sample(molecule_structure, molecular_molar_density,

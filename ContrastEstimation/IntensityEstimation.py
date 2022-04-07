@@ -14,6 +14,10 @@ TODO: Finish this introduction
 
 """
 import numpy as np
+from scipy import interpolate
+
+from AtomAttenuationParams import atom_attenuation_param
+from AtomMassParams import atom_mass_list
 from ContrastEstimation import AtomFormFactor
 
 # Define constants
@@ -47,7 +51,8 @@ def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_i
     atom_num = len(molecule_structure)
 
     if atom_num == 1:
-        return AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[0][0], q_detector_in_A=q_detector_in_A)
+        return AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[0][0],
+                                                    q_detector_in_A=q_detector_in_A)
     else:
         for atom_idx1 in range(atom_num):
             # Get the atomic form factor
@@ -73,12 +78,72 @@ def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_i
         return np.sqrt(mff)
 
 
-def get_attenuation_length(molecule_structure):
+def get_mass_attenuation_coefficient(molecule_structure, energy_keV):
+    """
+    Get the mass attenuation coefficient of the specified molecule.
 
+    :param energy_keV: The incident photon energy measured in eV.
+    :param molecule_structure:
+    :return:
+    """
     atom_num = len(molecule_structure)
+
+    # Get the molecular mass
+    molecular_mass = 0.
     for atom_idx in range(atom_num):
+        atom_type = molecule_structure[atom_idx][0]
+        molecular_mass += atom_mass_list[atom_type][1]
+
+    molecule_mass_attenuation_coefficient = 0.
+    for atom_idx in range(atom_num):
+        atom_type = molecule_structure[atom_idx][0]
+
         # Get the list of the mass attenuation coefficient:
-        pass
+        atom_data = atom_attenuation_param[atom_type]
+
+        energy_list = np.log10(atom_data[:, 0])
+        mu_rho_list = atom_data[:, 1]
+
+        # Get the interpolation function
+        mu_rho_fun = interpolate.interp1d(energy_list, mu_rho_list, kind='cubic')
+
+        # Get the interpolated value
+        mu_rho_fit = mu_rho_fun(np.log10(energy_keV * 1e-3))
+
+        # update the molecule_mass_attenuation_coefficient
+        molecule_mass_attenuation_coefficient += atom_mass_list[atom_type][1] / molecular_mass * mu_rho_fit
+
+    return molecule_mass_attenuation_coefficient
+
+
+def get_attenuation_coefficient(molecule_structure_list, energy_keV, density_list):
+    """
+    Get the attenuation coefficient
+
+    :param molecule_structure_list:
+    :param energy_keV:
+    :param density_list: The density of each kind of molecules in this compound. The unit is g / cm^3
+    :return:
+    """
+
+    # Get the total attenuation coefficient
+    total_attenuation_coefficient = 0.
+    for idx in range(len(molecule_structure_list)):
+        mu_rho = get_mass_attenuation_coefficient(molecule_structure_list[idx], energy_keV)
+        total_attenuation_coefficient += mu_rho * density_list
+
+    return total_attenuation_coefficient
+
+
+def get_attenuation_length_cm(molecule_structure_list, energy_keV, density_list):
+    """
+
+    :param molecule_structure_list:
+    :param energy_keV:
+    :param density_list:  The density of each kind of molecules in this compound. The unit is g / cm^3
+    :return:
+    """
+    return 1. / get_attenuation_coefficient(molecule_structure_list, energy_keV, density_list)
 
 
 def get_differential_crosssection_for_uniform_sample(molecule_structure, molecular_molar_density,

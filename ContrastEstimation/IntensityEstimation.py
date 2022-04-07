@@ -21,16 +21,22 @@ N_A = 6.02214086 * 1e23  # Avogadro's Constant
 re0 = 2.8179403227 * 1e-15  # classical electron radius
 
 
-def get_molecular_formfactor_for_uniform_sample(molecular_constitution, q_detector_in_A):
+def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_in_A):
     """
     According to the theory presented in the document,
     the averaged molecular form factor over rotations is
 
+    # Wrong Equation
     mff = sqrt( sum_n (|f_n(q)|^2) )
 
     where n loops through all atoms in this molecule.
 
-    :param molecular_constitution:  A dictionary showing the number of each kind of atoms in a single molecule
+    :param molecule_structure:  A list of the shape
+                                [["atom 1", np.array([x1, y1, z1]),],
+                                 ["atom 2", np.array([x2, y2, z2]),],
+                                 ["atom 3", np.array([x2, y2, z2]),],
+                                 ... ]
+
     :param q_detector_in_A:
     :return:
     """
@@ -38,32 +44,43 @@ def get_molecular_formfactor_for_uniform_sample(molecular_constitution, q_detect
     mff = 0.
 
     # Get the list of all atom kinds
-    atom_types = list(molecular_constitution.keys())
+    atom_num = len(molecule_structure)
 
-    for atom in atom_types:
-        # Get the atomic form factor
-        aff = AtomFormFactor.get_atomic_formfactor(atom_name=atom, q_detector_in_A=q_detector_in_A)
+    if atom_num == 1:
+        return AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[0][0], q_detector_in_A=q_detector_in_A)
+    else:
+        for atom_idx1 in range(atom_num):
+            # Get the atomic form factor
+            aff1 = AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[atom_idx1][0],
+                                                        q_detector_in_A=q_detector_in_A)
 
-        # Add the formfactor to the holder
-        mff += molecular_constitution[atom] * aff ** 2
+            # Add the formfactor to the holder
+            mff += aff1 ** 2
 
-    return np.sqrt(mff)
+            for atom_idx2 in range(atom_idx1):
+                pass
+
+        return np.sqrt(mff)
 
 
-def get_differential_crosssection_for_uniform_sample(molecular_constitution, molecular_molar_density,
+def get_attenuation_length(molecule_structure, ):
+    pass
+
+
+def get_differential_crosssection_for_uniform_sample(molecule_structure, molecular_molar_density,
                                                      q_detector_in_A):
     """
     The differential cross section obtained in this function
     has been normalized by the sample thickness.
     Therefore, it has a unit of m^-1
 
-    :param molecular_constitution:
+    :param molecule_structure:
     :param molecular_molar_density:  The unit is in mol / L
     :param q_detector_in_A:
     :return:
     """
     # Get the molecular form factor
-    mff = get_molecular_formfactor_for_uniform_sample(molecular_constitution=molecular_constitution,
+    mff = get_molecular_formfactor_for_uniform_sample(molecule_structure=molecule_structure,
                                                       q_detector_in_A=q_detector_in_A)
 
     # get the differential cross section

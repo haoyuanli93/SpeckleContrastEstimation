@@ -30,6 +30,7 @@ def get_atomic_formfactor_Gaussian_fitting_parameters(atom_name):
     """
     if atom_name in atom_list:
         return atom_dict[atom_name]
+
     else:
         print("Warning! this program does not have the data for atom: {}".format(atom_name))
         print("Return a numpy array of np.zeros(9, dtype=np.float64) as a place holder.")

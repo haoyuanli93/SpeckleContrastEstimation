@@ -1,5 +1,12 @@
 import numpy as np
 
+"""
+The data in this file comes from website:
+https://physics.nist.gov/PhysRefData/XrayMassCoef/tab3.html
+
+The unit of each column are
+MeV,  cm^2/g,   cm^2/g,
+"""
 atom_attenuation_param = {
     "H": np.array(
         [[1.00000E-03, 7.217E+00, 6.820E+00, ],

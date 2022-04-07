@@ -16,9 +16,9 @@ TODO: Finish this introduction
 import numpy as np
 from scipy import interpolate
 
-from AtomAttenuationParams import atom_attenuation_param
-from AtomMassParams import atom_mass_list
 from ContrastEstimation import AtomFormFactor
+from ContrastEstimation.AtomAttenuationParams import atom_attenuation_param
+from ContrastEstimation.AtomMassParams import atom_mass_list
 
 # Define constants
 N_A = 6.02214086 * 1e23  # Avogadro's Constant
@@ -130,20 +130,20 @@ def get_attenuation_coefficient(molecule_structure_list, photon_energy_keV, dens
     total_attenuation_coefficient = 0.
     for idx in range(len(molecule_structure_list)):
         mu_rho = get_mass_attenuation_coefficient(molecule_structure_list[idx], photon_energy_keV)
-        total_attenuation_coefficient += mu_rho * density_list
+        total_attenuation_coefficient += mu_rho * density_list[idx]
 
     return total_attenuation_coefficient
 
 
-def get_attenuation_length_cm(molecule_structure_list, photon_energy_keV, density_list):
+def get_attenuation_length_cm(molecule_structure_list, photon_energy_keV, partial_density_list):
     """
 
     :param molecule_structure_list:
     :param photon_energy_keV:
-    :param density_list:  The density of each kind of molecules in this compound. The unit is g / cm^3
+    :param partial_density_list:  The density of each kind of molecules in this compound. The unit is g / cm^3
     :return:
     """
-    return 1. / get_attenuation_coefficient(molecule_structure_list, photon_energy_keV, density_list)
+    return 1. / get_attenuation_coefficient(molecule_structure_list, photon_energy_keV, partial_density_list)
 
 
 def get_differential_crosssection_for_uniform_sample(molecule_structure, molecular_molar_density,
@@ -174,3 +174,6 @@ def get_scatter_intensity_with_a_unifrom_sample(differential_list,
                                                 q_detector,
                                                 photon_energy_keV):
     pass
+
+
+

@@ -25,6 +25,45 @@ N_A = 6.02214086 * 1e23  # Avogadro's Constant
 re0 = 2.8179403227 * 1e-15  # classical electron radius
 
 
+def convert_density_mole_L_to_g_cm3(molecule_structure, density_mole_L):
+    """
+
+    :param molecule_structure:
+    :param density_mole_L:
+    :return:
+    """
+    molecule_mass = get_molecule_molar_mass_in_g(molecule_structure=molecule_structure)
+
+    return density_mole_L * molecule_mass / 1000.
+
+
+def convert_density_g_cm3_to_mole_L(molecule_structure, density_g_cm3):
+    """
+
+    :param molecule_structure:
+    :param density_g_cm3:
+    :return:
+    """
+    molecule_mass = get_molecule_molar_mass_in_g(molecule_structure=molecule_structure)
+    return density_g_cm3 / molecule_mass * 1000.
+
+
+def get_molecule_molar_mass_in_g(molecule_structure):
+    """
+    Get the molecule molar mass.
+    i.e. the mass of a mole of the molecule measured in gram
+    :param molecule_structure:
+    :return:
+    """
+    molar_mass = 0.
+
+    atom_num = len(molecule_structure)
+    for atom_idx in range(atom_num):
+        molar_mass += atom_mass_list[molecule_structure[atom_idx][0]][1]
+
+    return molar_mass
+
+
 def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_in_A):
     """
     According to the theory presented in the document,
@@ -53,6 +92,7 @@ def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_i
     if atom_num == 1:
         return AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[0][0],
                                                     q_detector_in_A=q_detector_in_A)
+
     else:
         for atom_idx1 in range(atom_num):
             # Get the atomic form factor
@@ -62,18 +102,19 @@ def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_i
             # Add the formfactor to the holder
             mff += aff1 ** 2
 
-        for atom_idx2 in range(1, atom_num):
-            aff1 = AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[atom_idx2][0],
-                                                        q_detector_in_A=q_detector_in_A)
-
-            for atom_idx3 in range(atom_idx2 - 1):
+        for atom_idx2 in range(atom_num):
+            for atom_idx3 in range(atom_num):
+                aff1 = AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[atom_idx2][0],
+                                                            q_detector_in_A=q_detector_in_A)
                 aff2 = AtomFormFactor.get_atomic_formfactor(atom_name=molecule_structure[atom_idx3][0],
                                                             q_detector_in_A=q_detector_in_A)
+                if atom_idx3 == atom_idx2:
+                    continue
+                else:
+                    phase = q_detector_in_A * np.linalg.norm(molecule_structure[atom_idx2][1] -
+                                                             molecule_structure[atom_idx3][1])
 
-                phase = q_detector_in_A * np.linalg.norm(molecule_structure[atom_idx2][1] -
-                                                         molecule_structure[atom_idx3][1])
-
-                mff += 2 * aff1 * aff2 * np.sin(phase) / phase
+                    mff += aff1 * aff2 * np.sinc(phase / np.pi)
 
         return np.sqrt(mff)
 
@@ -89,10 +130,7 @@ def get_mass_attenuation_coefficient(molecule_structure, energy_keV):
     atom_num = len(molecule_structure)
 
     # Get the molecular mass
-    molecular_mass = 0.
-    for atom_idx in range(atom_num):
-        atom_type = molecule_structure[atom_idx][0]
-        molecular_mass += atom_mass_list[atom_type][1]
+    molecular_mass = get_molecule_molar_mass_in_g(molecule_structure=molecule_structure)
 
     molecule_mass_attenuation_coefficient = 0.
     for atom_idx in range(atom_num):
@@ -116,37 +154,36 @@ def get_mass_attenuation_coefficient(molecule_structure, energy_keV):
     return molecule_mass_attenuation_coefficient
 
 
-def get_attenuation_coefficient(molecule_structure_list, photon_energy_keV, density_list):
+def get_attenuation_coefficient(molecule_structure, photon_energy_keV, density):
     """
     Get the attenuation coefficient
 
-    :param molecule_structure_list:
+    :param molecule_structure:
     :param photon_energy_keV:
-    :param density_list: The density of each kind of molecules in this compound. The unit is g / cm^3
+    :param density: The density of each kind of molecules in this compound. The unit is g / cm^3
     :return:
     """
 
     # Get the total attenuation coefficient
-    total_attenuation_coefficient = 0.
-    for idx in range(len(molecule_structure_list)):
-        mu_rho = get_mass_attenuation_coefficient(molecule_structure_list[idx], photon_energy_keV)
-        total_attenuation_coefficient += mu_rho * density_list[idx]
+    mu_rho = get_mass_attenuation_coefficient(molecule_structure, photon_energy_keV)
+    total_attenuation_coefficient = mu_rho * density
 
     return total_attenuation_coefficient
 
 
-def get_attenuation_length_cm(molecule_structure_list, photon_energy_keV, partial_density_list):
+def get_attenuation_length_cm(molecule_structure, photon_energy_keV, partial_density):
     """
 
-    :param molecule_structure_list:
+    :param molecule_structure:
     :param photon_energy_keV:
-    :param partial_density_list:  The density of each kind of molecules in this compound. The unit is g / cm^3
+    :param partial_density:  The density of each kind of molecules in this compound. The unit is g / cm^3
     :return:
     """
-    return 1. / get_attenuation_coefficient(molecule_structure_list, photon_energy_keV, partial_density_list)
+    return 1. / get_attenuation_coefficient(molecule_structure, photon_energy_keV, partial_density)
 
 
-def get_differential_crosssection_for_uniform_sample(molecule_structure, molecular_molar_density,
+def get_differential_crosssection_for_uniform_sample(molecule_structure,
+                                                     density_g_cm3,
                                                      q_detector_in_A):
     """
     The differential cross section obtained in this function
@@ -154,7 +191,7 @@ def get_differential_crosssection_for_uniform_sample(molecule_structure, molecul
     Therefore, it has a unit of m^-1
 
     :param molecule_structure:
-    :param molecular_molar_density:  The unit is in mol / L
+    :param density_g_cm3:  The unit is in mol / L
     :param q_detector_in_A:
     :return:
     """
@@ -162,18 +199,40 @@ def get_differential_crosssection_for_uniform_sample(molecule_structure, molecul
     mff = get_molecular_formfactor_for_uniform_sample(molecule_structure=molecule_structure,
                                                       q_detector_in_A=q_detector_in_A)
 
-    # get the differential cross section
-    # The additional factor 1000 convert the molar density from mol/L to mol/m^3.
+    # Convert the density in g/cm^3 to mole/m^3
+    molecule_mass = get_molecule_molar_mass_in_g(molecule_structure=molecule_structure)
+    density_mole_m3 = density_g_cm3 * (100 ** 3) / molecule_mass
 
-    return molecular_molar_density * 1000. * N_A * (mff * re0) ** 2
+    return N_A * density_mole_m3 * (mff * re0) ** 2
 
 
-def get_scatter_intensity_with_a_unifrom_sample(differential_list,
-                                                density_list,
+def get_scatter_intensity_with_a_unifrom_sample(molecule_structure_list,
+                                                density_g_cm3_list,
                                                 sample_thickness,
+                                                pixel_size,
+                                                detector_distance,
+                                                incident_photon_count,
                                                 q_detector,
                                                 photon_energy_keV):
-    pass
+    # Diffraction cross section
+    diff_list = [get_differential_crosssection_for_uniform_sample(
+        molecule_structure=molecule_structure_list[x],
+        density_g_cm3=density_g_cm3_list[x],
+        q_detector_in_A=q_detector) for x in range(len(molecule_structure_list))]
 
+    attenuation_coef_list = [get_attenuation_coefficient(molecule_structure=molecule_structure_list[x],
+                                                         photon_energy_keV=photon_energy_keV,
+                                                         density=density_g_cm3_list[x]) for x in
+                             range(len(molecule_structure_list))]
+    attenuation_length = 1. / np.sum(attenuation_coef_list)  # unit cm
 
+    # Convert to m
+    attenuation_length /= 100.
 
+    # Effective sample thickness
+    d_eff = attenuation_length * (1 - np.exp(-sample_thickness / attenuation_length))
+
+    # Solid angle spanned by the pixel
+    d_omega = (pixel_size / detector_distance) ** 2
+
+    return incident_photon_count * np.sum(diff_list) * d_omega * d_eff

@@ -206,6 +206,31 @@ def get_differential_crosssection_for_uniform_sample(molecule_structure,
     return N_A * density_mole_m3 * (mff * re0) ** 2
 
 
+def get_scatter_intensity_with_differetial_crosssection(diff_cross_list,
+                                                        atten_length,
+                                                        sample_thickness,
+                                                        pixel_size,
+                                                        detector_distance,
+                                                        incident_photon_count):
+    """
+
+    :param diff_cross_list:
+    :param atten_length:
+    :param sample_thickness:
+    :param pixel_size:
+    :param detector_distance:
+    :param incident_photon_count:
+    :return:
+    """
+    # Effective sample thickness
+    d_eff = atten_length * (1 - np.exp(-sample_thickness / atten_length))
+
+    # Solid angle spanned by the pixel
+    d_omega = (pixel_size / detector_distance) ** 2
+
+    return incident_photon_count * np.sum(diff_cross_list) * d_omega * d_eff
+
+
 def get_scatter_intensity_with_a_unifrom_sample(molecule_structure_list,
                                                 density_g_cm3_list,
                                                 sample_thickness,
@@ -236,3 +261,35 @@ def get_scatter_intensity_with_a_unifrom_sample(molecule_structure_list,
     d_omega = (pixel_size / detector_distance) ** 2
 
     return incident_photon_count * np.sum(diff_list) * d_omega * d_eff
+
+
+def get_scatter_intensity_with_a_unifrom_sample_batch(molecule_structure_list,
+                                                      density_g_cm3_list,
+                                                      sample_thickness_list,
+                                                      pixel_size,
+                                                      detector_distance_list,
+                                                      incident_photon_count,
+                                                      q_detector,
+                                                      photon_energy_keV):
+    # Diffraction cross section
+    diff_list = [get_differential_crosssection_for_uniform_sample(
+        molecule_structure=molecule_structure_list[x],
+        density_g_cm3=density_g_cm3_list[x],
+        q_detector_in_A=q_detector) for x in range(len(molecule_structure_list))]
+
+    attenuation_coef_list = [get_attenuation_coefficient(molecule_structure=molecule_structure_list[x],
+                                                         photon_energy_keV=photon_energy_keV,
+                                                         density=density_g_cm3_list[x]) for x in
+                             range(len(molecule_structure_list))]
+    attenuation_length = 1. / np.sum(attenuation_coef_list)  # unit cm
+
+    # Convert to m
+    attenuation_length /= 100.
+
+    # Effective sample thickness
+    d_eff = attenuation_length * (1 - np.exp(-sample_thickness_list / attenuation_length))
+
+    # Solid angle spanned by the pixel
+    d_omega = (pixel_size / detector_distance_list) ** 2
+
+    return incident_photon_count * np.sum(diff_list) * np.outer(d_eff, d_omega)

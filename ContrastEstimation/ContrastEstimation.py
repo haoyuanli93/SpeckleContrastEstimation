@@ -1,181 +1,195 @@
 import numpy as np
-from scipy import integrate
-
-"""
-All quantities used in this script are in the SI unit.
-"""
+from scipy.special import erfc
 
 
-##########################################
-#    Basic functions
-##########################################
-def wavelength(energy_eV):
-    """
-    input  : x-ray energy in [eV]
-    output : x-ray wavelength in [m]
-    """
-    h = 4.135667516e-15  # planck constant [eV*s]
-    c = 299792458  # speed of light [m/s]
-    lmbda = h * c / energy_eV
-    return lmbda
-
-
-##########################################
-#    Visualization
-##########################################
-def custom_ticks(tick_values, tick_labels, value_range, axis, axis_handle):
-    """
-    helper function to plot axis ticks and tick labels
-    """
-    if len(tick_values) != len(tick_labels):
-        print('WARNING: Please match tick_values and tick_labels!')
-
-    tick_list = []
-    label_list = []
-    for t, tick in enumerate(tick_values):
-        idx = np.argmin(np.abs(tick - value_range))
-        tick_list.append(idx)
-        label_list.append(tick_labels[t])
-
-    if axis == 'x':
-        axis_handle.set_xticks(tick_list)
-        axis_handle.set_xticklabels(label_list)
-    if axis == 'y':
-        axis_handle.set_yticks(tick_list)
-        axis_handle.set_yticklabels(label_list)
-
-    return
-
-
-##########################################
-#    Get constrast
-##########################################
-def contrast_hruszkewycz(momentum_transfer,
-                         xray_energy,
-                         energy_resolution,
-                         xray_focus,
-                         sample_thickness,
-                         detector_distance,
-                         detector_pixelsize):
-    """
-    returns speckle contrast estimation according to:
-    Hruszkewycz et al,,Physical review letters 109.18 (2012): 185502
-
-    equation (2),(4) of the supplementary material are used.
+#################################################
+#    Get the pixel number within the specified Q
+#################################################
+def get_detector_q_map(theta0, n_pix, pix_size, det_dist, incident_wavevec_A):
     """
 
-    # aliases following Hruszkewycz
-    q = momentum_transfer
-    e = xray_energy
-    r = energy_resolution
-    s = xray_focus
-    t = sample_thickness
-    l = detector_distance
-    p = detector_pixelsize
-
-    # scattering angle
-    theta = np.arcsin(q * wavelength(e) / (4 * np.pi))
-
-    # Mrad
-    temp = (q * r) ** 2 * (s ** 2 * np.cos(theta) ** 2 + t ** 2 * np.sin(theta) ** 2)
-    Mrad = np.sqrt(1 + temp / (4 * np.pi ** 2))
-    # print('beta_rad: ',1./Mrad)
-
-    # Mdet
-    temp = (p ** 4 * s ** 2) * (s ** 2 * np.cos(2 * theta) ** 2 + t ** 2 * np.sin(2 * theta) ** 2)
-    Mdet = np.sqrt(1 + temp / (wavelength(e) ** 4 * l ** 4 * Mrad ** 2))
-    # print('beta_det: ',1./Mdet)
-
-    return 1. / (Mrad * Mdet)
-
-
-def contrast_moeller(momentum_transfer,
-                     xray_energy,
-                     energy_resolution,
-                     xray_focus,
-                     sample_thickness,
-                     detector_distance,
-                     detector_pixelsize):
-    """
-    returns speckle contrast estimation according to:
-    Moeller et al, IUCrJ 6.5 (2019)
-
-    equation (12),(13),(14) are used.
-    """
-
-    # aliases following Moeller et al
-    q = momentum_transfer
-    e = xray_energy
-    r = energy_resolution  # i.e. DeltaLambda/Lambda
-    a = xray_focus
-    d = sample_thickness
-    l = detector_distance
-    p = detector_pixelsize
-
-    # wavevector
-    k = 2. * np.pi / wavelength(e)
-    # scattering angle
-    theta = np.arcsin(q * wavelength(e) / (4 * np.pi))
-
-    # beta_res
-    w = 2 * np.pi * p * a / (wavelength(e) * l)
-    fun1 = lambda v: 2 / w ** 2 * (w - v) * (np.sin(v / 2) / (v / 2)) ** 2
-    out1 = integrate.quad(fun1, 0, w, limit=500)
-    beta_res = out1[0] ** 2
-    # print('beta_res: ',beta_res)
-
-    # beta_cl
-    if a > 100e-6:
-        print('WARNING: please check transverse coherence for xray_focus larger than 100um.')
-    A = r * q * np.sqrt(1 - q ** 2 / (4 * k ** 2))
-    B = (-1. / 2) * r * q ** 2 / k
-    fun2 = lambda x, z: (a - x) * (d - z) * np.exp(-x ** 2 / a ** 2) * (
-            np.exp(-2 * np.abs(A * x + B * z)) + np.exp(-2 * np.abs(A * x - B * z)))
-    out2 = integrate.dblquad(fun2, 0, d, 0, a)
-    beta_cl = out2[0] * 2 / (a * d) ** 2
-    # print('beta_cl: ',beta_cl)
-
-    # contrast
-    return beta_res * beta_cl
-
-
-#######################################################
-#     Get sample scattering intensity
-#######################################################
-
-def iq_estimate(detector_distance,
-                sample_thickness,
-                pixel_size=50e-6,
-                photon_per_pulse=3e8,
-                diff_sigma=9.94,
-                attenuation_length=2000e-6):
-    """
-    returns crude estimate of scattering intensity [photons/pixel/shot]
-
-    The default values for the photon_per_pulse, diff_sigma,
-    and attenuation_length are for CO2 at supercritical condition
-
-    :param detector_distance:
-    :param sample_thickness:
-    :param pixel_size: The size of the pixel on the detector. For epix detector
-                        this is 50 um.
-    :param photon_per_pulse: incomming xray at the sample position [photons/pulse]
-    :param diff_sigma: differential scattering cross section of supercritical CO2 in units [1/m]
-    :param attenuation_length: attenuation length of co2 [m] at 8.3keV and 0.6g/cm**3
+    :param theta0:
+    :param n_pix:
+    :param pix_size:
+    :param det_dist:
+    :param incident_wavevec_A: The length of the incident wave-vector measured in A^-1
     :return:
     """
+    position_holder = np.zeros((n_pix, n_pix, 3))
 
-    # solid angle covered by a single detector pixel
-    omega = (pixel_size / detector_distance) ** 2
+    # Define the central position vector
+    position_center = np.array([0, np.sin(2 * theta0), np.cos(2 * theta0)]) * det_dist
 
-    # effective sample thickness at 8.3keV [m]
-    d_eff = attenuation_length * (1 - np.exp(-sample_thickness / attenuation_length))
+    # Define the two normal directions
+    norm_dir1 = np.array([0, np.cos(2 * theta0), - np.sin(2 * theta0)]) * pix_size
+    norm_dir2 = np.array([1, 0, 0]) * pix_size
 
-    # scattering intensity [photons/pixel/shot]
-    I_out = photon_per_pulse * diff_sigma * omega * d_eff
+    # Fill in the position holder
+    position_holder[:, :, :] += position_center[np.newaxis, np.newaxis, :]
+    position_holder[:, :, :] += np.outer(np.linspace(-n_pix / 2, n_pix / 2, num=n_pix), norm_dir1)[np.newaxis, :, :]
+    position_holder[:, :, :] += np.outer(np.linspace(-n_pix / 2, n_pix / 2, num=n_pix), norm_dir2)[:, np.newaxis, :]
 
-    return I_out
+    # Get the q value
+    direction_holder = position_holder / np.sqrt(np.sum(np.square(position_holder), axis=-1))[:, :, np.newaxis]
+
+    q_vec_holder = direction_holder - np.array([0, 0, 1])[np.newaxis, np.newaxis, :]
+    q_vec_holder *= incident_wavevec_A
+
+    return np.sqrt(np.sum(np.square(q_vec_holder), axis=-1))
 
 
-def get_water_diff_cross_section(q):
-    pass
+def get_pixel_num_in_Q(det_Q_map, Q_max, Q_min):
+    """
+    Get the
+    :param det_Q_map:
+    :param Q_max:
+    :param Q_min:
+    :return:
+    """
+    holder = np.ones_like(det_Q_map, dtype=np.bool)
+    holder[det_Q_map < Q_max] = 0
+    holder[det_Q_map > Q_min] = 0
+
+    return np.sum(holder)
+
+
+##########################################################################
+#    Calculate the contrast
+##########################################################################
+def deltaRadial(tth, gam, L, W, xi, k0, dlol, dx, dy, f1, Num=200):
+    W = W / np.cos(gam)
+    Q = 2. * k0 * np.sin(tth / 2.)
+    A = dlol * Q * 1.e4 * np.sqrt(1 - (Q / (2 * k0)) ** 2)
+    B = -dlol * 1.e4 * Q ** 2 / k0
+    A = A + B * np.tan(gam)
+    x0 = np.linspace(0., L, Num)
+    y0 = np.linspace(0., W, Num)
+    x, y = np.meshgrid(x0, y0, sparse=True)
+    t = (L - x) * (W - y) / ((L * W) ** 2) * np.exp(-((x / xi) ** 2))
+    t *= (dx * x + dy * y) ** 2
+    t *= f1(A * x + B * y) + f1(A * x - B * y)
+    delta_r = 2 * np.sum(t * x[0, 1] * y[1, 0])
+    return delta_r
+
+
+def deltaAzimuthal(M, xi):
+    x = M / xi
+    t = x * np.sqrt(np.pi) / 2. * (1 - erfc(x)) + np.exp(-x ** 2) - 1.0
+    t *= (xi / x) ** 2
+    return t
+
+
+def deltav(Q, pp, f1, omega=0, Num=200):
+    i = np.size(Q)
+    tth = 2 * np.arcsin(Q / 2 / pp['k0'])
+    gam = []
+
+    if omega == 0:
+        gam = np.zeros_like(Q)
+    if omega == 1:
+        gam = np.pi / 2. - tth / 2.
+    if omega == 2:
+        gam = -tth / 2.
+
+    z = np.zeros_like(Q)
+    deltas = np.zeros((6, i))
+    t = betaAzimuthal(pp['M'], pp['xi_v'])
+    d0 = deltaAzimuthal(pp['M'], pp['xi_v'])
+    scale = 1.e4
+    for j in range(i):
+        t0 = betaRadial(tth[j], gam[j], pp['L'], pp['W'], pp['xi_h'], pp['k0'], pp['dlol'],
+                        f1, Num=Num)
+        t1 = deltaRadial(tth[j], gam[j], pp['L'], pp['W'], pp['xi_h'], pp['k0'], pp['dlol'], 1.0, 0.0,
+                         f1, Num=Num)
+        t2 = deltaRadial(tth[j], gam[j], pp['L'], pp['W'], pp['xi_h'], pp['k0'], pp['dlol'], 0.0, 1.0,
+                         f1, Num=Num)
+        z[j] = np.sqrt(t * t1 + t * t2)
+        deltas[0, j] = scale ** 2 * t1 / t0
+        deltas[1, j] = scale ** 2 * t2 / t0
+        deltas[2, j] = scale ** 2 * d0 / t
+        deltas[3, j] = t0 * t
+        deltas[4, j] = t
+        deltas[5, j] = t0
+    return deltas
+
+
+def betaRadial(tth, gam, L, W, xi, k0, dlol, f1, Num=200):
+    """
+    Calculate radial beta in scattering plane by brute force.
+
+    tth: (rad) Scattering angle
+    gam: No sure
+    L: (um) Beam size on the sample within the diffraction plane
+    W: (um) Sample thickness
+    xi: (um) coherence length in the
+    k0: (angstroms^-1) is the length of the incident wave-vector: 2*pi / wavelength
+    dlol: energy resolution.  FWHM_spectrum / energy_center
+    f1: function that defines the shape of the pulse
+    """
+
+    W = W / np.cos(gam)
+    Q = 2. * k0 * np.sin(tth / 2.)
+    A = dlol * Q * 1.e4 * np.sqrt(1 - (Q / (2 * k0)) ** 2)
+    B = -dlol * 1.e4 * Q ** 2 / k0
+    A = A + B * np.tan(gam)
+    x0 = np.linspace(0., L, Num)
+    y0 = np.linspace(0., W, Num)
+    x, y = np.meshgrid(x0, y0, sparse=True)
+    t = 2.0 * (L - x) * (W - y) / ((L * W) ** 2) * np.exp(-((x / xi) ** 2))
+    t *= f1(A * x + B * y) + f1(A * x - B * y)
+    beta_radial = np.sum(t * x[0, 1] * y[1, 0])
+    return beta_radial
+
+
+def betaAzimuthal(M, xi):
+    """
+    Get the speckle contribution from the azimuthal direction
+
+    M: (um) Beam size on the sample perpendicular to the diffraction plane
+    xi_op: (um) coherence length perpendicular to the diffraction plane
+    """
+    x = M / xi
+    t = (x * np.sqrt(np.pi) * (1 - erfc(x)) + np.exp(-x ** 2) - 1) / x ** 2
+    return t
+
+
+def get_contrast(params, f1):
+    """
+    Get the contrast estimation.
+
+    :param params:
+    :param f1:
+    :return:
+    radial FWHM sepckle size(1e-4 inverse angstrom),
+    azimuthal FWHM speckle size(1e-4 inverse angstrom),
+    detector pixel size(1e-4 inverse angstrom),
+    beta with perfect detector,
+    real beta
+    """
+
+    pixelsize = params['pixelsize']
+    detectordis = params['detectordis']
+
+    k0 = params['k0']
+
+    kpix = k0 * pixelsize * 1.0e-6 / detectordis  # detector pixel size in Q space
+    kdet = kpix / np.sqrt(6.0)  # convert detector size to the rms space
+
+    norm = 1.0e+4
+    q = params['Q']
+    theta_detector = params['tthetadet']
+
+    deltas = deltav(q, params, f1=f1)
+    d1 = 1.0 / deltas[2, :]
+    d2 = 1.0 / (np.cos(theta_detector) ** 2 * deltas[0, :] + np.sin(theta_detector) ** 2 * deltas[1, :])
+
+    dd4 = deltas[3, :]  # perfect detector beta
+
+    fd1 = np.sqrt(d1 / (kdet ** 2 + d1))  # fraction delta_zz
+    fd2 = np.sqrt(d2 / (kdet ** 2 + d2))  # fraction delta_rr
+
+    # measured beta.
+    beta3 = fd1 * fd2 * dd4
+    factor = 2.35  # from rms to FWHM
+
+    return norm * np.sqrt(d1) * factor, norm * np.sqrt(d2) * factor, norm * kpix, dd4, beta3

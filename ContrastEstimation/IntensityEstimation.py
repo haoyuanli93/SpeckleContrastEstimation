@@ -206,6 +206,28 @@ def get_differential_crosssection_for_uniform_sample(molecule_structure,
     return N_A * density_mole_m3 * (mff * re0) ** 2
 
 
+def get_differential_crosssection_with_structure_factor(molecule_structure,
+                                                        density_g_cm3,
+                                                        q_detector_in_A,
+                                                        structure_factor):
+    """
+    The differential cross section obtained in this function
+    has been normalized by the sample thickness.
+    Therefore, it has a unit of m^-1
+
+    :param molecule_structure:
+    :param density_g_cm3:  The unit is in mol / L
+    :param q_detector_in_A:
+    :param structure_factor:
+    :return:
+    """
+    differential_crosssection = get_differential_crosssection_for_uniform_sample(molecule_structure,
+                                                                                 density_g_cm3,
+                                                                                 q_detector_in_A)
+
+    return differential_crosssection * structure_factor
+
+
 def get_scatter_intensity_with_differetial_crosssection(diff_cross_list,
                                                         atten_length,
                                                         sample_thickness,
@@ -213,6 +235,7 @@ def get_scatter_intensity_with_differetial_crosssection(diff_cross_list,
                                                         detector_distance,
                                                         incident_photon_count):
     """
+    Get the scattering intensity for a given differential cross section.
 
     :param diff_cross_list:
     :param atten_length:
@@ -239,6 +262,20 @@ def get_scatter_intensity_with_a_unifrom_sample(molecule_structure_list,
                                                 incident_photon_count,
                                                 q_detector,
                                                 photon_energy_keV):
+    """
+    Calculate the scattering intensity for a specific
+    detector distance and sample thickness.
+
+    :param molecule_structure_list:
+    :param density_g_cm3_list:
+    :param sample_thickness:
+    :param pixel_size:
+    :param detector_distance:
+    :param incident_photon_count:
+    :param q_detector:
+    :param photon_energy_keV:
+    :return:
+    """
     # Diffraction cross section
     diff_list = [get_differential_crosssection_for_uniform_sample(
         molecule_structure=molecule_structure_list[x],
@@ -271,6 +308,21 @@ def get_scatter_intensity_with_a_unifrom_sample_batch(molecule_structure_list,
                                                       incident_photon_count,
                                                       q_detector,
                                                       photon_energy_keV):
+    """
+    Get the scattering intensity for a series of
+    detector distance and sample thickness
+
+
+    :param molecule_structure_list:
+    :param density_g_cm3_list:
+    :param sample_thickness_list:
+    :param pixel_size:
+    :param detector_distance_list:
+    :param incident_photon_count:
+    :param q_detector:
+    :param photon_energy_keV:
+    :return:
+    """
     # Diffraction cross section
     diff_list = [get_differential_crosssection_for_uniform_sample(
         molecule_structure=molecule_structure_list[x],

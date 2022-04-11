@@ -21,47 +21,8 @@ from ContrastEstimation.AtomAttenuationParams import atom_attenuation_param
 from ContrastEstimation.AtomMassParams import atom_mass_list
 
 # Define constants
-N_A = 6.02214086 * 1e23  # Avogadro's Constant
-re0 = 2.8179403227 * 1e-15  # classical electron radius
-
-
-def convert_density_mole_L_to_g_cm3(molecule_structure, density_mole_L):
-    """
-
-    :param molecule_structure:
-    :param density_mole_L:
-    :return:
-    """
-    molecule_mass = get_molecule_molar_mass_in_g(molecule_structure=molecule_structure)
-
-    return density_mole_L * molecule_mass / 1000.
-
-
-def convert_density_g_cm3_to_mole_L(molecule_structure, density_g_cm3):
-    """
-
-    :param molecule_structure:
-    :param density_g_cm3:
-    :return:
-    """
-    molecule_mass = get_molecule_molar_mass_in_g(molecule_structure=molecule_structure)
-    return density_g_cm3 / molecule_mass * 1000.
-
-
-def get_molecule_molar_mass_in_g(molecule_structure):
-    """
-    Get the molecule molar mass.
-    i.e. the mass of a mole of the molecule measured in gram
-    :param molecule_structure:
-    :return:
-    """
-    molar_mass = 0.
-
-    atom_num = len(molecule_structure)
-    for atom_idx in range(atom_num):
-        molar_mass += atom_mass_list[molecule_structure[atom_idx][0]][1]
-
-    return molar_mass
+from ContrastEstimation.util import get_molecule_molar_mass_in_g
+from ContrastEstimation.util import N_A, re0
 
 
 def get_molecular_formfactor_for_uniform_sample(molecule_structure, q_detector_in_A):
@@ -171,15 +132,15 @@ def get_attenuation_coefficient(molecule_structure, photon_energy_keV, density):
     return total_attenuation_coefficient
 
 
-def get_attenuation_length_cm(molecule_structure, photon_energy_keV, partial_density):
+def get_attenuation_length_cm(molecule_structure, photon_energy_keV, density):
     """
 
     :param molecule_structure:
     :param photon_energy_keV:
-    :param partial_density:  The density of each kind of molecules in this compound. The unit is g / cm^3
+    :param density:  The density of each kind of molecules in this compound. The unit is g / cm^3
     :return:
     """
-    return 1. / get_attenuation_coefficient(molecule_structure, photon_energy_keV, partial_density)
+    return 1. / get_attenuation_coefficient(molecule_structure, photon_energy_keV, density)
 
 
 def get_differential_crosssection_for_uniform_sample(molecule_structure,

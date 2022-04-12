@@ -162,13 +162,12 @@ def get_differential_crosssection_for_uniform_sample(molecule_structure,
 
     # Convert the density in g/cm^3 to mole/m^3
     molecule_mass = get_molecule_molar_mass_in_g(molecule_structure=molecule_structure)
-    density_mole_m3 = density_g_cm3 * (100 ** 3) / molecule_mass
+    density_mole_m3 = density_g_cm3 * 1e6 / molecule_mass
 
     return N_A * density_mole_m3 * (mff * re0) ** 2
 
 
 def get_differential_crosssection_with_structure_factor(molecule_structure,
-                                                        density_g_cm3,
                                                         q_detector_in_A,
                                                         structure_factor):
     """
@@ -177,16 +176,15 @@ def get_differential_crosssection_with_structure_factor(molecule_structure,
     Therefore, it has a unit of m^-1
 
     :param molecule_structure:
-    :param density_g_cm3:  The unit is in mol / L
     :param q_detector_in_A:
     :param structure_factor:
     :return:
     """
-    differential_crosssection = get_differential_crosssection_for_uniform_sample(molecule_structure,
-                                                                                 density_g_cm3,
-                                                                                 q_detector_in_A)
+    # Get the molecular form factor
+    mff = get_molecular_formfactor_for_uniform_sample(molecule_structure=molecule_structure,
+                                                      q_detector_in_A=q_detector_in_A)
 
-    return differential_crosssection * structure_factor
+    return mff * structure_factor
 
 
 def get_scatter_intensity_with_differetial_crosssection(diff_cross_list,

@@ -291,7 +291,7 @@ def get_diffracted_flux_with_MD_formfactor(in_flux, dOmega, q_in, d_eff_m, box_s
 
     # Get the intensity
     intensity = np.multiply(np.square(np.abs(formfactorMD)), polarization_factor)
-    intensity *= (in_flux * dOmega * re0 ** 2)
+    intensity *= (in_flux * dOmega * (re0 ** 2))
     intensity *= (d_eff_m * 1e10 / (box_size_A[2, 1] - box_size_A[2, 0]))
 
     return intensity

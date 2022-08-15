@@ -183,15 +183,15 @@ def get_MD_formfactor_at_Q_list(q_list_A, atom_position_array, atom_type_array, 
     sin_holder = np.zeros(q_num, dtype=np.float64)
 
     # Calculate the pattern
-    _get_MD_formfactor_at_Q_list[(q_num + 511) // 512, 512](cos_holder,
-                                                            sin_holder,
-                                                            form_factor_list,
-                                                            np.ascontiguousarray(q_list_A),
-                                                            atom_position_sorted,
-                                                            atom_type_start_point,
-                                                            len(atom_type_name_list),
-                                                            q_num,
-                                                            atom_type_array.shape[0])
+    _get_MD_formfactor_at_Q_list(cos_holder,
+                                 sin_holder,
+                                 form_factor_list,
+                                 np.ascontiguousarray(q_list_A),
+                                 atom_position_sorted,
+                                 atom_type_start_point,
+                                 len(atom_type_name_list),
+                                 q_num,
+                                 atom_type_array.shape[0])
 
     return cos_holder + 1.j * sin_holder
 
@@ -254,15 +254,15 @@ def get_MD_formfactor_at_Q_list_parallel_at_Q(q_list_A, atom_position_array, ato
     sin_holder = np.zeros(q_num, dtype=np.float64)
 
     # Calculate the pattern
-    _get_MD_formfactor_at_Q_list_parallel_at_Q[(q_num + 511) // 512, 512](cos_holder,
-                                                                          sin_holder,
-                                                                          form_factor_list,
-                                                                          q_list_A,
-                                                                          atom_position_sorted,
-                                                                          split_idx,
-                                                                          atom_type_num,
-                                                                          q_num,
-                                                                          atom_num)
+    _get_MD_formfactor_at_Q_list_parallel_at_Q(cos_holder,
+                                               sin_holder,
+                                               form_factor_list,
+                                               q_list_A,
+                                               atom_position_sorted,
+                                               split_idx,
+                                               atom_type_num,
+                                               q_num,
+                                               atom_num)
 
     return cos_holder + 1.j * sin_holder
 

@@ -260,9 +260,7 @@ def get_MD_formfactor_at_Q_list_parallel_at_Q(q_list_A, atom_position_array, ato
                                                q_list_A,
                                                atom_position_sorted,
                                                split_idx,
-                                               atom_type_num,
-                                               q_num,
-                                               atom_num)
+                                               atom_type_num,)
 
     return cos_holder + 1.j * sin_holder
 

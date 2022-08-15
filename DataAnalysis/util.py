@@ -103,10 +103,10 @@ def getContrast(probability, kMean, nroi, Mmin=1, Mmax=100., Mnum=1000):
 
     # Loop through all M
     for idx in range(Mnum):
-        chi2[idx] = chisqs(p=probability[:4],
-                           kavg=kMean,
-                           M=Ms[idx],
-                           nroi=nroi)
+        chi2[idx] = chiSquare(p=probability[:4],
+                              kMean=kMean,
+                              M=Ms[idx],
+                              nroi=nroi)
 
     # Get the M where the chi square is minimal
     pos = np.argmin(chi2)

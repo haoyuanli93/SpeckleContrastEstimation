@@ -202,7 +202,7 @@ def _get_MD_formfactor_at_Q_list_parallel_at_Q(cos_holder, sin_holder,
                                                split_idx, atom_type_num):
     # Loop through all types of atoms
     for atom_type_idx in range(atom_type_num):
-        form_factor = form_factor_list[atom_type_idx, q_idx]
+        form_factor = form_factor_list[atom_type_idx, :]
 
         # Loop through each of the atom in this type
         for atom_idx in range(split_idx[atom_type_idx], split_idx[atom_type_idx + 1]):

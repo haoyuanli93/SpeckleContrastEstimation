@@ -1,6 +1,5 @@
 import numpy as np
 from numba import jit
-import math
 from ContrastEstimation.AtomFormFactor import get_atomic_formfactor
 from ContrastEstimation.util import re0
 
@@ -146,8 +145,8 @@ def _get_MD_formfactor_at_Q_list(cos_holder, sin_holder,
                      q_list[q_idx, 1] * atom_position[atom_iter, 1] +
                      q_list[q_idx, 2] * atom_position[atom_iter, 2])
 
-            cos_holder[q_idx] += form_factor * math.cos(phase)
-            sin_holder[q_idx] += form_factor * math.sin(phase)
+            cos_holder[q_idx] += form_factor * np.cos(phase)
+            sin_holder[q_idx] += form_factor * np.sin(phase)
 
 
 def get_MD_formfactor_at_Q_list(q_list_A, atom_position_array, atom_type_array, atom_type_name_list):
@@ -210,8 +209,8 @@ def _get_MD_formfactor_at_Q_list_parallel_at_Q(cos_holder, sin_holder,
                      q_list[:, 1] * atom_position[atom_idx, 1] +
                      q_list[:, 2] * atom_position[atom_idx, 2])
 
-            cos_holder[:] += form_factor * math.cos(phase)
-            sin_holder[:] += form_factor * math.sin(phase)
+            cos_holder[:] += form_factor * np.cos(phase)
+            sin_holder[:] += form_factor * np.sin(phase)
 
 
 def get_MD_formfactor_at_Q_list_parallel_at_Q(q_list_A, atom_position_array, atom_type_array, atom_type_name_list):

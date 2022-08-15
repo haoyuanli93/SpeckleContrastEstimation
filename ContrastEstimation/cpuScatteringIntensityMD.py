@@ -199,19 +199,19 @@ def get_MD_formfactor_at_Q_list(q_list_A, atom_position_array, atom_type_array, 
 @jit(parallel=True)
 def _get_MD_formfactor_at_Q_list_parallel_at_Q(cos_holder, sin_holder,
                                                form_factor_list, q_list, atom_position,
-                                               split_idx, atom_type_num, q_num, atom_num):
-    for q_idx in range(q_num):
+                                               split_idx, atom_type_num):
+    # Loop through all types of atoms
+    for atom_type_idx in range(atom_type_num):
+        form_factor = form_factor_list[atom_type_idx, q_idx]
 
-        for atom_type_idx in range(atom_type_num):
-            form_factor = form_factor_list[atom_type_idx, q_idx]
+        # Loop through each of the atom in this type
+        for atom_idx in range(split_idx[atom_type_idx], split_idx[atom_type_idx + 1]):
+            phase = (q_list[:, 0] * atom_position[atom_idx, 0] +
+                     q_list[:, 1] * atom_position[atom_idx, 1] +
+                     q_list[:, 2] * atom_position[atom_idx, 2])
 
-            for atom_idx in range(split_idx[atom_type_idx], split_idx[atom_type_idx + 1]):
-                phase = (q_list[q_idx, 0] * atom_position[atom_idx, 0] +
-                         q_list[q_idx, 1] * atom_position[atom_idx, 1] +
-                         q_list[q_idx, 2] * atom_position[atom_idx, 2])
-
-                cos_holder[q_idx] += form_factor * math.cos(phase)
-                sin_holder[q_idx] += form_factor * math.sin(phase)
+            cos_holder[:] += form_factor * math.cos(phase)
+            sin_holder[:] += form_factor * math.sin(phase)
 
 
 def get_MD_formfactor_at_Q_list_parallel_at_Q(q_list_A, atom_position_array, atom_type_array, atom_type_name_list):

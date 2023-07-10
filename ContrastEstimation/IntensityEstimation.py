@@ -251,7 +251,8 @@ def get_scatter_intensity_with_a_unifrom_sample(molecule_structure_list,
     attenuation_length /= 100.
 
     # Effective sample thickness
-    d_eff = attenuation_length * (1 - np.exp(-sample_thickness / attenuation_length))
+    # d_eff = attenuation_length / 2. * (1 - np.exp(-sample_thickness / attenuation_length)) ** 2
+    d_eff = sample_thickness * np.exp(-sample_thickness / attenuation_length)
 
     # Solid angle spanned by the pixel
     d_omega = (pixel_size / detector_distance) ** 2
@@ -298,7 +299,8 @@ def get_scatter_intensity_with_a_unifrom_sample_batch(molecule_structure_list,
     attenuation_length /= 100.
 
     # Effective sample thickness
-    d_eff = attenuation_length * (1 - np.exp(-sample_thickness_list / attenuation_length))
+    # d_eff = attenuation_length * (1 - np.exp(-sample_thickness_list / attenuation_length))
+    d_eff = sample_thickness_list * np.exp(-sample_thickness_list / attenuation_length)
 
     # Solid angle spanned by the pixel
     d_omega = (pixel_size / detector_distance_list) ** 2

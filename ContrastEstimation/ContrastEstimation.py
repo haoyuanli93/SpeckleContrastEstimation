@@ -46,9 +46,9 @@ def get_pixel_num_in_Q(det_Q_map, Q_max, Q_min):
     :param Q_min:
     :return:
     """
-    holder = np.ones_like(det_Q_map, dtype=np.bool)
-    holder[det_Q_map < Q_min] = 0
-    holder[det_Q_map > Q_max] = 0
+    holder = np.ones_like(det_Q_map, dtype=bool)
+    holder[det_Q_map < Q_min] = False
+    holder[det_Q_map > Q_max] = False
 
     return np.sum(holder)
 

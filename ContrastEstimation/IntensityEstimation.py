@@ -205,7 +205,8 @@ def get_scatter_intensity_with_differetial_crosssection(diff_cross_list,
     :return:
     """
     # Effective sample thickness
-    d_eff = atten_length * (1 - np.exp(-sample_thickness / atten_length))
+    #d_eff = atten_length * (1 - np.exp(-sample_thickness / atten_length))
+    d_eff = np.exp(-sample_thickness / atten_length) * sample_thickness
 
     # Solid angle spanned by the pixel
     d_omega = (pixel_size / detector_distance) ** 2

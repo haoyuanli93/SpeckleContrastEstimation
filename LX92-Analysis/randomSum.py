@@ -71,7 +71,7 @@ if rank == 0:
     print("Checking the status of each smd file")
     for run in runNumList:
         # Construct the location of the smd file
-        smdFileName = "{}/{}_Run{:0>2d}.h5".format(smdPath, expName, run)
+        smdFileName = "{}/{}_Run{:0>4d}.h5".format(smdPath, expName, run)
         # Check if the file exist:
         if not os.path.isfile(smdFileName):
             print("Does not find the smd output for run {} ".format(run) +
